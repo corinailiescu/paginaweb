@@ -1,0 +1,904 @@
+
+<html  xml:lang="en" lang="en">
+<body bgColor=#33ccff background=images\a9.jpg>
+
+<LINK href="/common/default.css" type=text/css rel=stylesheet >
+<STYLE type=text/css>
+
+div.menuBar,
+div.menuBar a.menuButton,
+div.menu,
+div.menu a.menuItem {
+  font-family: sans-serif;
+  font-size: 10pt;
+  font-style: italic;
+  font-weight: bold;
+  color: #000000;
+}
+
+div.menuBar {
+  background-color: transparent;
+  border: 2px solid;
+  border-color: transparent;
+  padding: 4px 2px 4px 2px;
+  text-align: center;
+}
+
+div.menuBar a.menuButton {
+  background-color: #ffd700;
+  border: 1px solid #ffd700;
+  color: #000000;
+  cursor: default;
+  left: 0px;
+  margin: 1px;
+  padding: 2px 2px 2px 2px;
+  position: relative;
+  text-decoration: none;
+  top: 0px;
+  z-index: 100;
+}
+
+div.menuBar a.menuButton:hover {
+  background-color: #ffd700;
+  border-color:#ffff00 #ffff00 #ffff00 #ffff00;
+  color: #000000;
+}
+
+div.menuBar a.menuButtonActive,
+div.menuBar a.menuButtonActive:hover {
+  background-color: #ffd700;
+  border-color: #ffd700 #ffd700 #ffd700 #ffd700;
+  color: #000000;
+  left: 1px;
+  top: 1px;
+}
+
+div.menu {
+  background-color: #ffd700;
+  border: 2px solid;
+  border-color: #ffd700 #ffd700 #ffd700 #ffd700;
+  left: 0px;
+  padding: 0px 1px 1px 0px;
+  position: absolute;
+  top: 0px;
+  visibility: hidden;
+  z-index: 101;
+}
+
+div.menu a.menuItem {
+  color: #000000;
+  cursor: default;
+  display: block;
+  padding: 3px 1em;
+  text-decoration: none;
+  white-space: nowrap;
+
+}
+div.menu a.menuItem:hover, div.menu a.menuItemHighlight {
+  background-color: #ffd700;
+  border: 1px solid #ffff00;
+  border-color: #ffff00 #ffff00 #ffff00 #ffff00;
+  color: #000000;
+  
+}
+
+</STYLE>
+<script type="text/javascript">//<![CDATA[
+
+//----------------------------------------------------------------------------
+// Code to determine the browser and version.
+//----------------------------------------------------------------------------
+
+function Browser() {
+
+  var ua, s, i;
+
+  this.isIE    = false;  // Internet Explorer
+  this.isOP    = false;  // Opera
+  this.isNS    = false;  // Netscape
+  this.version = null;
+
+  ua = navigator.userAgent;
+
+  s = "Opera";
+  if ((i = ua.indexOf(s)) >= 0) {
+    this.isOP = true;
+    this.version = parseFloat(ua.substr(i + s.length));
+    return;
+  }
+
+  s = "Netscape6/";
+  if ((i = ua.indexOf(s)) >= 0) {
+    this.isNS = true;
+    this.version = parseFloat(ua.substr(i + s.length));
+    return;
+  }
+
+  // Treat any other "Gecko" browser as Netscape 6.1.
+
+  s = "Gecko";
+  if ((i = ua.indexOf(s)) >= 0) {
+    this.isNS = true;
+    this.version = 6.1;
+    return;
+  }
+
+  s = "MSIE";
+  if ((i = ua.indexOf(s))) {
+    this.isIE = true;
+    this.version = parseFloat(ua.substr(i + s.length));
+    return;
+  }
+}
+
+var browser = new Browser();
+
+//----------------------------------------------------------------------------
+// Code for handling the menu bar and active button.
+//----------------------------------------------------------------------------
+
+var activeButton = null;
+
+function buttonClick(event, menuId) {
+
+  var button;
+
+  // Get the target button element.
+
+  if (browser.isIE)
+    button = window.event.srcElement;
+  else
+    button = event.currentTarget;
+
+  // Blur focus from the link to remove that annoying outline.
+
+  button.blur();
+
+  // Associate the named menu to this button if not already done.
+  // Additionally, initialize menu display.
+
+  if (button.menu == null) {
+    button.menu = document.getElementById(menuId);
+    if (button.menu.isInitialized == null)
+      menuInit(button.menu);
+  }
+
+  // [MODIFIED] Added for activate/deactivate on mouseover.
+
+  // Set mouseout event handler for the button, if not already done.
+
+  if (button.onmouseout == null)
+    button.onmouseout = buttonOrMenuMouseout;
+
+  // Exit if this button is the currently active one.
+
+  if (button == activeButton)
+    return false;
+
+  // [END MODIFIED]
+
+  // Reset the currently active button, if any.
+
+  if (activeButton != null)
+    resetButton(activeButton);
+
+  // Activate this button, unless it was the currently active one.
+
+  if (button != activeButton) {
+    depressButton(button);
+    activeButton = button;
+  }
+  else
+    activeButton = null;
+
+  return false;
+}
+
+function buttonMouseover(event, menuId) {
+
+  var button;
+
+  // [MODIFIED] Added for activate/deactivate on mouseover.
+
+  // Activates this button's menu if no other is currently active.
+
+  if (activeButton == null) {
+    buttonClick(event, menuId);
+    return;
+  }
+
+  // [END MODIFIED]
+
+  // Find the target button element.
+
+  if (browser.isIE)
+    button = window.event.srcElement;
+  else
+    button = event.currentTarget;
+
+  // If any other button menu is active, make this one active instead.
+
+  if (activeButton != null && activeButton != button)
+    buttonClick(event, menuId);
+}
+
+function depressButton(button) {
+
+  var x, y;
+
+  // Update the button's style class to make it look like it's
+  // depressed.
+
+  button.className += " menuButtonActive";
+
+  // [MODIFIED] Added for activate/deactivate on mouseover.
+
+  // Set mouseout event handler for the button, if not already done.
+
+  if (button.onmouseout == null)
+    button.onmouseout = buttonOrMenuMouseout;
+  if (button.menu.onmouseout == null)
+    button.menu.onmouseout = buttonOrMenuMouseout;
+
+  // [END MODIFIED]
+
+  // Position the associated drop down menu under the button and
+  // show it.
+
+  x = getPageOffsetLeft(button);
+  y = getPageOffsetTop(button) + button.offsetHeight;
+
+  // For IE, adjust position.
+
+  if (browser.isIE) {
+  //x += button.offsetParent.clientLeft-200;
+    x += button.offsetParent.clientLeft;
+    y += button.offsetParent.clientTop;
+  }
+
+  button.menu.style.left = x + "px";
+  button.menu.style.top  = y + "px";
+  button.menu.style.visibility = "visible";
+
+  // For IE; size, position and show the menu's IFRAME as well.
+
+  if (button.menu.iframeEl != null)
+  {
+    button.menu.iframeEl.style.left = button.menu.style.left;
+    button.menu.iframeEl.style.top  = button.menu.style.top;
+    button.menu.iframeEl.style.width  = button.menu.offsetWidth + "px";
+    button.menu.iframeEl.style.height = button.menu.offsetHeight + "px";
+    button.menu.iframeEl.style.display = "";
+  }
+}
+
+function resetButton(button) {
+
+  // Restore the button's style class.
+
+  removeClassName(button, "menuButtonActive");
+
+  // Hide the button's menu, first closing any sub menus.
+
+  if (button.menu != null) {
+    closeSubMenu(button.menu);
+    button.menu.style.visibility = "hidden";
+
+    // For IE, hide menu's IFRAME as well.
+
+    if (button.menu.iframeEl != null)
+      button.menu.iframeEl.style.display = "none";
+  }
+}
+
+//----------------------------------------------------------------------------
+// Code to handle the menus and sub menus.
+//----------------------------------------------------------------------------
+
+function menuMouseover(event) {
+
+  var menu;
+
+  // Find the target menu element.
+
+  if (browser.isIE)
+    menu = getContainerWith(window.event.srcElement, "DIV", "menu");
+  else
+    menu = event.currentTarget;
+
+  // Close any active sub menu.
+
+  if (menu.activeItem != null)
+    closeSubMenu(menu);
+}
+
+function menuItemMouseover(event, menuId) {
+
+  var item, menu, x, y;
+
+  // Find the target item element and its parent menu element.
+
+  if (browser.isIE)
+    item = getContainerWith(window.event.srcElement, "A", "menuItem");
+  else
+    item = event.currentTarget;
+  menu = getContainerWith(item, "DIV", "menu");
+
+  // Close any active sub menu and mark this one as active.
+
+  if (menu.activeItem != null)
+    closeSubMenu(menu);
+  menu.activeItem = item;
+
+  // Highlight the item element.
+
+  item.className += " menuItemHighlight";
+
+  // Initialize the sub menu, if not already done.
+
+  if (item.subMenu == null) {
+    item.subMenu = document.getElementById(menuId);
+    if (item.subMenu.isInitialized == null)
+      menuInit(item.subMenu);
+  }
+
+  // [MODIFIED] Added for activate/deactivate on mouseover.
+
+  // Set mouseout event handler for the sub menu, if not already done.
+
+  if (item.subMenu.onmouseout == null)
+    item.subMenu.onmouseout = buttonOrMenuMouseout;
+
+  // [END MODIFIED]
+
+  // Get position for submenu based on the menu item.
+
+  x = getPageOffsetLeft(item) + item.offsetWidth;
+  y = getPageOffsetTop(item);
+
+  // Adjust position to fit in view.
+
+  var maxX, maxY;
+
+  if (browser.isIE) {
+    maxX = Math.max(document.documentElement.scrollLeft, document.body.scrollLeft) +
+      (document.documentElement.clientWidth != 0 ? document.documentElement.clientWidth : document.body.clientWidth);
+    maxY = Math.max(document.documentElement.scrollTop, document.body.scrollTop) +
+      (document.documentElement.clientHeight != 0 ? document.documentElement.clientHeight : document.body.clientHeight);
+  }
+  if (browser.isOP) {
+    maxX = document.documentElement.scrollLeft + window.innerWidth;
+    maxY = document.documentElement.scrollTop  + window.innerHeight;
+  }
+  if (browser.isNS) {
+    maxX = window.scrollX + window.innerWidth;
+    maxY = window.scrollY + window.innerHeight;
+  }
+  maxX -= item.subMenu.offsetWidth;
+  maxY -= item.subMenu.offsetHeight;
+
+  if (x > maxX)
+    x = Math.max(0, x - item.offsetWidth - item.subMenu.offsetWidth
+      + (menu.offsetWidth - item.offsetWidth));
+  y = Math.max(0, Math.min(y, maxY));
+
+  // Position and show the sub menu.
+
+  item.subMenu.style.left       = x + "px";
+  item.subMenu.style.top        = y + "px";
+  item.subMenu.style.visibility = "visible";
+
+  // For IE; size, position and display the menu's IFRAME as well.
+
+  if (item.subMenu.iframeEl != null)
+  {
+    item.subMenu.iframeEl.style.left    = item.subMenu.style.left;
+    item.subMenu.iframeEl.style.top     = item.subMenu.style.top;
+    item.subMenu.iframeEl.style.width   = item.subMenu.offsetWidth + "px";
+    item.subMenu.iframeEl.style.height  = item.subMenu.offsetHeight + "px";
+    item.subMenu.iframeEl.style.display = "";
+  }
+
+  // Stop the event from bubbling.
+
+  if (browser.isIE)
+    window.event.cancelBubble = true;
+  else
+    event.stopPropagation();
+}
+
+function closeSubMenu(menu) {
+
+  if (menu == null || menu.activeItem == null)
+    return;
+
+  // Recursively close any sub menus.
+
+  if (menu.activeItem.subMenu != null) {
+    closeSubMenu(menu.activeItem.subMenu);
+    menu.activeItem.subMenu.style.visibility = "hidden";
+
+    // For IE, hide the sub menu's IFRAME as well.
+
+    if (menu.activeItem.subMenu.iframeEl != null)
+      menu.activeItem.subMenu.iframeEl.style.display = "none";
+
+    menu.activeItem.subMenu = null;
+  }
+
+  // Deactivate the active menu item.
+
+  removeClassName(menu.activeItem, "menuItemHighlight");
+  menu.activeItem = null;
+}
+
+// [MODIFIED] Added for activate/deactivate on mouseover. Handler for mouseout
+// event on buttons and menus.
+
+function buttonOrMenuMouseout(event) {
+
+  var el;
+
+  // If there is no active button, exit.
+
+  if (activeButton == null)
+    return;
+
+  // Find the element the mouse is moving to.
+
+  if (browser.isIE)
+    el = window.event.toElement;
+  else if (event.relatedTarget != null)
+      el = (event.relatedTarget.tagName ? event.relatedTarget : event.relatedTarget.parentNode);
+
+  // If the element is not part of a menu, reset the active button.
+
+  if (getContainerWith(el, "DIV", "menu") == null) {
+    resetButton(activeButton);
+    activeButton = null;
+  }
+}
+
+// [END MODIFIED]
+
+//----------------------------------------------------------------------------
+// Code to initialize menus.
+//----------------------------------------------------------------------------
+
+function menuInit(menu) {
+
+  var itemList, spanList;
+  var textEl, arrowEl;
+  var itemWidth;
+  var w, dw;
+  var i, j;
+
+  // For IE, replace arrow characters.
+
+  if (browser.isIE) {
+    menu.style.lineHeight = "2.5ex";
+    spanList = menu.getElementsByTagName("SPAN");
+    for (i = 0; i < spanList.length; i++)
+      if (hasClassName(spanList[i], "menuItemArrow")) {
+        spanList[i].style.fontFamily = "Webdings";
+        spanList[i].firstChild.nodeValue = "4";
+      }
+  }
+
+  // Find the width of a menu item.
+
+  itemList = menu.getElementsByTagName("A");
+  if (itemList.length > 0)
+    itemWidth = itemList[0].offsetWidth;
+  else
+    return;
+
+  // For items with arrows, add padding to item text to make the
+  // arrows flush right.
+
+  for (i = 0; i < itemList.length; i++) {
+    spanList = itemList[i].getElementsByTagName("SPAN");
+    textEl  = null;
+    arrowEl = null;
+    for (j = 0; j < spanList.length; j++) {
+      if (hasClassName(spanList[j], "menuItemText"))
+        textEl = spanList[j];
+      if (hasClassName(spanList[j], "menuItemArrow"))
+        arrowEl = spanList[j];
+    }
+    if (textEl != null && arrowEl != null) {
+      textEl.style.paddingRight = (itemWidth 
+        - (textEl.offsetWidth + arrowEl.offsetWidth)) + "px";
+      // For Opera, remove the negative right margin to fix a display bug.
+      if (browser.isOP)
+        arrowEl.style.marginRight = "0px";
+    }
+  }
+
+  // Fix IE hover problem by setting an explicit width on first item of
+  // the menu.
+
+  if (browser.isIE) {
+    w = itemList[0].offsetWidth;
+    itemList[0].style.width = w + "px";
+    dw = itemList[0].offsetWidth - w;
+    w -= dw;
+    itemList[0].style.width = w + "px";
+  }
+
+  // Fix the IE display problem (SELECT elements and other windowed controls
+  // overlaying the menu) by adding an IFRAME under the menu.
+
+  if (browser.isIE) {
+    var iframeEl = document.createElement("IFRAME");
+    iframeEl.frameBorder = 0;
+    iframeEl.src = "javascript:;";
+    iframeEl.style.display = "none";
+    iframeEl.style.position = "absolute";
+    iframeEl.style.filter = "progid:DXImageTransform.Microsoft.Alpha(style=0,opacity=0)";
+    menu.iframeEl = menu.parentNode.insertBefore(iframeEl, menu);
+  }
+
+  // Mark menu as initialized.
+
+  menu.isInitialized = true;
+}
+
+//----------------------------------------------------------------------------
+// General utility functions.
+//----------------------------------------------------------------------------
+
+function getContainerWith(node, tagName, className) {
+
+  // Starting with the given node, find the nearest containing element
+  // with the specified tag name and style class.
+
+  while (node != null) {
+    if (node.tagName != null && node.tagName == tagName &&
+        hasClassName(node, className))
+      return node;
+    node = node.parentNode;
+  }
+
+  return node;
+}
+
+function hasClassName(el, name) {
+
+  var i, list;
+
+  // Return true if the given element currently has the given class
+  // name.
+
+  list = el.className.split(" ");
+  for (i = 0; i < list.length; i++)
+    if (list[i] == name)
+      return true;
+
+  return false;
+}
+
+function removeClassName(el, name) {
+
+  var i, curList, newList;
+
+  if (el.className == null)
+    return;
+
+  // Remove the given class name from the element's className property.
+
+  newList = new Array();
+  curList = el.className.split(" ");
+  for (i = 0; i < curList.length; i++)
+    if (curList[i] != name)
+      newList.push(curList[i]);
+  el.className = newList.join(" ");
+}
+
+function getPageOffsetLeft(el) {
+
+  var x;
+
+  // Return the x coordinate of an element relative to the page.
+
+  //x = el.offsetLeft-60;
+  x = el.offsetLeft;
+  if (el.offsetParent != null)
+    x += getPageOffsetLeft(el.offsetParent);
+
+  return x;
+}
+
+function getPageOffsetTop(el) {
+
+  var y;
+
+  // Return the x coordinate of an element relative to the page.
+
+  y = el.offsetTop;
+  if (el.offsetParent != null)
+    y += getPageOffsetTop(el.offsetParent);
+
+  return y;
+}
+
+//]]></script>
+<!-- Menu bar #1. -->
+<title> Products </title>
+<p><!-- Menu bar. --></p>
+<center>
+
+<table  style="width: 1100px;" align="center">
+    <br>
+    <br>
+    <br>
+    <br>
+	<tr>
+	   
+	   <td align=right colspan=8 >
+		    <div class="menuBar" style="WIDTH: 57.07%; HEIGHT: 28px" id=DIV1>
+				<a class="menuButton" href="home.html" onclick="return resetButton(event);" 
+                   			onmouseover="resetButton(event);">Home</a>
+                   
+				<a class="menuButton" href ="" onclick="return buttonClick(event, 'editMenu');" 
+				   	onmouseover="buttonMouseover(event, 'editMenu');" >Company Profile </a>
+				   
+				<a class="menuButton" href="" onclick="return buttonClick(event, 'viewMenu');" 
+				   	onmouseover="buttonMouseover(event, 'viewMenu');">Products &amp;Services</a>
+				   
+				<a class="menuButton" href="Cont.html" onclick="return resetButton(event);" 
+                   			onmouseover="resetButton(event);">Contact Us</a>
+                  
+         	   </div>
+		   <!-- Main menus. -->
+			<div id="editMenu" class="menu" onmouseover="menuMouseover(event)">
+				<A class=menuItem href="overview.html" style="BORDER-BOTTOM-COLOR: black" >Company Overview</A>
+				<A class=menuItem href="key.html" style="BORDER-BOTTOM-COLOR: black" >Key Markets</A>
+				<A class=menuItem href="work.html" style="BORDER-BOTTOM-COLOR: black">Working @ CC</A>  
+			</div>
+			<div id="viewMenu" class="menu" onmouseover="menuMouseover(event)">
+				<A class=menuItem href="service.html" style="BORDER-BOTTOM-COLOR: black">Service Offering</A>
+				<A class=menuItem href="product.html" style="BORDER-BOTTOM-COLOR: black">Products</A>
+				<A class=menuItem href="knowledge.html" style="BORDER-BOTTOM-COLOR: black">Knowledge Base</A>
+			</div>
+	   </td>
+	   <td valign=top align=right >
+		
+	   </td>
+	</tr>
+	<tr>
+	   <td colspan=9>&nbsp;</td>
+	</tr> 
+
+	<tr>
+	   <td colspan=9>&nbsp;</td>
+	</tr> 
+</table>
+<table width="50%" align="center">
+
+
+
+    <tr>
+    	 <TD>
+           <TABLE style="WIDTH: 100%; HEIGHT: 100%; TEXT-ALIGN: left COLOR#ffd700" cellSpacing=0 cellPadding=0 border=0>
+             <TBODY>
+             <tr>
+             	<td align=left colspan=6 style="COLOR: #99ccff; TEXT-DECORATION: none">
+                 <DIV style="FONT-WEIGHT: bold; COLOR: #ffd700; TEXT-ALIGN: justify">
+                  <SMALL><SMALL><FONT size=+3><SMALL><SMALL>
+                  Axion Solutions is a professional services company working with the clients to create and 
+                  enhance their systems. However, throughout our activity we created several software solutions that 
+                  are available to be customized and implemented for our clients.
+                  </SMALL></SMALL></FONT></SMALL></SMALL>
+                 </DIV>
+              </tr>   
+             </TD>
+            <!--   <TR>
+                  <TD style="MARGIN: 5px; VERTICAL-ALIGN: top; WIDTH: 160px; HEIGHT: 390px "  rowSpan=3>
+                     <DIV style="TEXT-ALIGN: center"><SPAN style="FONT-WEIGHT: bold; COLOR: #ffd700"><BR>
+                       Open Project Management for Information Systems (OPMIS)</SPAN>
+                     </DIV>
+                     <DIV style="MARGIN: 7px; WIDTH: 150px; TEXT-ALIGN: justify; COLOR: #ffd700; ">
+                       A complete project management methodology suitable for a large range of software 
+                       development methodologies, from traditional Waterfall model to RAD techniques such as 
+                       Rational Unified Process (RUP) and Boehm (spiral) model. <BR><BR>Fully compliant 
+                       with PMI's PMBOK - 2000 Edition, OPMIS serves as an interface between ODS teams 
+                       and clients. It allows prospective clients to understand exactly how we will 
+                       perform our activity before we even set foot at their site. <BR><BR>OPMIS is 
+                       currently revised to be aligned with PMBOK - Third Edition.
+                     </DIV>
+                  </TD>
+                  <TD style="WIDTH: 527px">
+                    <TABLE style="WIDTH: 100%; TEXT-ALIGN: left" cellSpacing=2 cellPadding=3 border=0>
+                      <TBODY>
+                        <TR>
+                          <TD style="VERTICAL-ALIGN: top">
+                             <DIV style="TEXT-ALIGN: center">
+                              <DIV style="TEXT-ALIGN: left; COLOR: #ffd700;"><SPAN style="FONT-WEIGHT: bold; COLOR: #ffd700">
+                                3D Software Architecture Framework</SPAN><BR>
+                              </DIV>
+                               <SPAN style="FONT-WEIGHT: bold; COLOR: rgb(153,51,153)"></SPAN>
+                             </DIV>
+                              <SPAN style="FONT-WEIGHT: bold; COLOR: rgb(153,51,153)"></SPAN>
+                             <DIV style="TEXT-ALIGN: justify; COLOR: #ffd700"><BR>
+                               Extending Zachman's Enterprise Framework, the 3D Software Architecture 
+                               Framework adds perspective to each cell, simplifying the artifacts definition.<BR>
+                               Its mathematical support demonstrates its applicability to any initiative scale 
+                               and/or complexity, from small projects to enterprise-wide endeavors.
+                             </DIV>
+                          </TD>
+                          <TD><IMG style="WIDTH: 114px; HEIGHT: 100px" alt="" src="images\con001.jpeg">
+                          </TD>
+                        </TR>
+                       </TBODY>
+                     </TABLE>
+                  </TD>
+              </TR>
+              <TR>
+                  <TD style="WIDTH: 527px">
+                     <DIV style="TEXT-ALIGN: right">
+                      <TABLE style="WIDTH: 100%; TEXT-ALIGN: left" cellSpacing=4 cellPadding=2 border=0>
+                       <TBODY>
+                         <TR>
+                            <TD style="WIDTH: 233px"><TDCOLSPAN><SPAN style="FONT-WEIGHT: bold; COLOR: #ffd700">
+                              Effort Estimating Tool<BR><BR></SPAN></TDCOLSPAN>
+                                <TABLE style="WIDTH: 240px; TEXT-ALIGN: left" cellSpacing=0 cellPadding=0 border=0>
+                                  <TBODY>
+                                  <TR></TR>
+                                  <TR>
+                                     <TD style="VERTICAL-ALIGN: bottom; WIDTH: 110px; TEXT-ALIGN: justify; COLOR: #ffd700">
+                                       A very significant part of our revenue is generated in fixed price projects, 
+                                       accurate effort and cost estimates
+                                     </TD>
+                                     <TD style="WIDTH: 120px"><IMG style="WIDTH: 125px; HEIGHT: 90px" alt="" src="images\con001.jpeg">
+                                     </TD>
+                                  </TR>
+                                  <TR>
+                                     <TD style="VERTICAL-ALIGN: top" colSpan=2>
+                                       <DIV style="WIDTH: 235px; TEXT-ALIGN: justify; COLOR: #ffd700">
+                                         are of paramount importance. The tool we created and are using for proposals 
+                                         is based on the Program Evaluation and Review Technique (PERT), refined by 
+                                         historical statistics and through the Delphi expert's poling technique.<BR><BR>
+                                       </DIV>
+                                       <A style=" COLOR: #ffd700; FONT-STYLE: italic" href="http://www.gantthead.com/deliverable.cfm?ID=227717" target=_blank>
+                                       (public version available here ...)</A>
+                                     </TD>
+                                   </TR>
+                                  </TBODY>
+                                 </TABLE>
+                             </TD>
+                             <TD style="VERTICAL-ALIGN: top; WIDTH: 240px"><SPAN style="FONT-WEIGHT: bold; COLOR: #ffd700">
+                              Effort-Based Forecasting<BR><BR></SPAN>
+                               <DIV style="MARGIN-LEFT: 0px; WIDTH: 230px; TEXT-ALIGN: justify">
+                                 <TABLE style="WIDTH: 237px; HEIGHT: 100%; TEXT-ALIGN: left" cellSpacing=0 cellPadding=0 border=0>
+                                  <TBODY>
+                                     <TR>
+                                        <TD style="WIDTH: 235px; TEXT-ALIGN: justify; COLOR: #ffd700" colSpan=2>
+                                         This technique was born from the need to formalize forecasting for all 
+                                         the projects where cost information is not available or the reported actual 
+                                         cost is not reliable. Even if less rigorous (definitely much simpler) than 
+                                         Earned Value Technique, it provides quite
+                                        </TD>
+                                     </TR>
+                                     <TR>
+                                        <TD style="WIDTH: 235px"><IMG style="WIDTH: 130px; HEIGHT: 80px" alt="" src="images\con001.jpeg">
+                                        </TD>
+                                        <TD style="VERTICAL-ALIGN: top; TEXT-ALIGN: justify; COLOR: #ffd700">
+                                          <DIV style="WIDTH: 102px">
+                                            accurate status reports and forecasts for your project.
+                                          </DIV>
+                                        </TD>
+                                     </TR>
+                                     <TR>
+                                        <TD style="WIDTH: 235px" colSpan=2><BR>
+                                          <A style="COLOR: #ffd700; FONT-STYLE: italic" href="http://www.gantthead.com/deliverable.cfm?ID=228169" target=_blank>
+                                           (public version available here ...)</A>
+                                        </TD>
+                                     </TR>
+                                   </TBODY>
+                                 </TABLE>
+                               </DIV>
+                            </TD>
+                         </TR>
+                       </TBODY>
+                     </TABLE>
+                  </DIV>
+                </TD>
+             </TR>
+            <TR></TR>
+         </TBODY>
+       </TABLE>
+     </TD>      
+
+             <td>&nbsp;</td>
+       	   <TD colspan=2 style="VERTICAL-ALIGN: top; WIDTH: 330px; HEIGHT: 480px; TEXT-ALIGN: right">
+<TABLE style="MARGIN-LEFT: auto; WIDTH: 330px; MARGIN-RIGHT: auto; HEIGHT: 477px; TEXT-ALIGN: left" cellSpacing=0 cellPadding=0 background=images/client_bkgrnd.jpg border=0>
+ <TBODY>
+   <TR style="FONT-WEIGHT: bold" align=justify>
+     <TD style="VERTICAL-ALIGN: top; WIDTH: 330px; HEIGHT: 58px; TEXT-ALIGN: center" colSpan=2>
+       <DIV style="MARGIN-LEFT: 0px; WIDTH: 330px; TEXT-ALIGN: center">
+         <A href="construction.html"><IMG title=in4bizz style="BORDER-RIGHT: 0px solid; BORDER-TOP: 0px solid; BORDER-LEFT: 0px solid; WIDTH: 219px; BORDER-BOTTOM: 0px solid; HEIGHT: 60px" 
+            alt=in4bizz src="images\con001.jpeg"></A><BR>
+       </DIV>
+     </TD>
+   </TR>
+   <TR>
+     <TD style="HEIGHT: 127px; TEXT-ALIGN: justify; COLOR: #ffd700">
+        <DIV style="MARGIN-LEFT: 5px; MARGIN-RIGHT: 5px">
+          <A href="construction.html"><SPAN style="FONT-WEIGHT: bold; COLOR: #ffd700; FONT-STYLE: italic">
+            In4Bizz</SPAN></A> 
+            is our flagship solution in the area of Data Warehousing / Business 
+            Intelligence.<BR>Representing our response to the modern business 
+            environment, often considered as information 
+         </DIV>
+     </TD>
+     <TD style="HEIGHT: 127px"><IMG style="WIDTH: 160px; HEIGHT: 120px" alt="" src="images\con001.jpeg">
+     </TD>
+   </TR>
+   <TR style="MARGIN-LEFT: 10px">
+     <TD style="VERTICAL-ALIGN: top; WIDTH: 330px; HEIGHT: 299px; TEXT-ALIGN: justify; COLOR: #ffd700" colSpan=2>
+       <DIV style="MARGIN-LEFT: 5px; MARGIN-RIGHT: 5px; HEIGHT: 315px">
+         dependent, the <SPAN style="FONT-STYLE: italic"><A href="construction.html">
+         <SPAN style="FONT-WEIGHT: bold; COLOR: #ffd700">In4Bizz</SPAN></A></SPAN>
+         Decision Support System provides several strategic and operational 
+         advantages:<BR><SPAN style="FONT-STYLE: italic"></SPAN><BR>- Pre-process huge 
+         amounts of operational data into useful and reliable information for the 
+         decision-makers.<BR><BR>- Easy access to information through powerful 
+         multidimensional data analysis, but also supporting the traditional reporting 
+         tools with performance improvements.<BR><BR>- Instant drill-down access to 
+         details of interest once the initial findings are made, without re-writing the 
+         entire report.<BR><BR>- New perspectives of business, clients, competitors, 
+         market trends and so on can be unveiled through the analysis of historical data 
+         and patterns.<BR><BR>According to industry statistics, the average return of 
+         investment (ROI) for decision support systems is 200%-500%. Shouldn't you 
+         consider it for your company? <BR>
+         
+       </DIV>
+     </TD>
+   </TR> -->
+ </TBODY></TABLE></TD></TR><!-- end of main content row -->
+ </TBODY>
+ </TABLE>
+ </TD>
+</TR>
+
+</TBODY>
+</TABLE>                   
+</td>         
+     </TR>
+     <TR>
+  
+  </TR>
+  <TR></TR>
+</TBODY>
+</TABLE>
+</TD>
+         		
+</tr>
+		<tr>
+			<td colspan=9>&nbsp;</td>
+		</tr>
+		<tr>
+			<td colspan=9>&nbsp;</td>
+		</tr>
+		 <tr>
+		     <td colspan=9>&nbsp;</td>
+
+          </tr>
+          <BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR>
+          <tr> 
+             <td>&nbsp;</td>
+             <td style="COLOR: #ffd700;" nowrap; colspan=7; >&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<FONT style=" COLOR: #ffd700"> 2024 Axion Solutions 
+      &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;&nbsp; All rights reserved!</FONT> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <FONT style=" COLOR: #ffd700">For inquires contact:  </FONT>
+<A style="COLOR: #ffd700;" title="General inquires" href="mailto:corinailiescu13@gmail.com"><U>corinailiescu13@gmail.com</U></A></td>
+             <td >&nbsp;</td> 
+           </tr>
+ </table>
+    
+
+<P></P>
+
+
+</center>
+</body>
+</html>

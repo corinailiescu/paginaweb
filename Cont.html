@@ -1,0 +1,889 @@
+
+<html xml:lang="en" lang="en">
+
+<body bgColor=#33ccff background=images\a3.jpg>
+
+<LINK href="/common/default.css" type=text/css rel=stylesheet >
+
+<STYLE type=text/css>
+
+div.menuBar,
+div.menuBar a.menuButton,
+div.menu,
+div.menu a.menuItem {
+  font-family: sans-serif;
+  font-size: 10pt;
+  font-style: italic;
+  font-weight: bold;
+  color: #000000;
+}
+
+div.menuBar {
+  background-color: transparent;
+  border: 2px solid;
+  border-color: transparent;
+  padding: 4px 2px 4px 2px;
+  text-align: center;
+}
+
+div.menuBar a.menuButton {
+  background-color: #ffd700;
+  border: 1px solid #ffd700;
+  color: #000000;
+  cursor: default;
+  left: 0px;
+  margin: 1px;
+  padding: 2px 2px 2px 2px;
+  position: relative;
+  text-decoration: none;
+  top: 0px;
+  z-index: 100;
+}
+
+div.menuBar a.menuButton:hover {
+  background-color: #ffd700;
+  border-color:#ffff00 #ffff00 #ffff00 #ffff00;
+  color: #000000;
+}
+
+div.menuBar a.menuButtonActive,
+div.menuBar a.menuButtonActive:hover {
+  background-color: #ffd700;
+  border-color: #ffd700 #ffd700 #ffd700 #ffd700;
+  color: #000000;
+  left: 1px;
+  top: 1px;
+}
+
+div.menu {
+  background-color: #ffd700;
+  border: 2px solid;
+  border-color: #ffd700 #ffd700 #ffd700 #ffd700;
+  left: 0px;
+  padding: 0px 1px 1px 0px;
+  position: absolute;
+  top: 0px;
+  visibility: hidden;
+  z-index: 101;
+}
+
+div.menu a.menuItem {
+  color: #000000;
+  cursor: default;
+  display: block;
+  padding: 3px 1em;
+  text-decoration: none;
+  white-space: nowrap;
+
+}
+div.menu a.menuItem:hover, div.menu a.menuItemHighlight {
+  background-color: #ffd700;
+  border: 1px solid #ffff00;
+  border-color: #ffff00 #ffff00 #ffff00 #ffff00;
+  color: #000000;
+  
+}
+
+</STYLE>
+<script type="text/javascript">//<![CDATA[
+
+//----------------------------------------------------------------------------
+// Code to determine the browser and version.
+//----------------------------------------------------------------------------
+
+function Browser() {
+
+  var ua, s, i;
+
+  this.isIE    = false;  // Internet Explorer
+  this.isOP    = false;  // Opera
+  this.isNS    = false;  // Netscape
+  this.version = null;
+
+  ua = navigator.userAgent;
+
+  s = "Opera";
+  if ((i = ua.indexOf(s)) >= 0) {
+    this.isOP = true;
+    this.version = parseFloat(ua.substr(i + s.length));
+    return;
+  }
+
+  s = "Netscape6/";
+  if ((i = ua.indexOf(s)) >= 0) {
+    this.isNS = true;
+    this.version = parseFloat(ua.substr(i + s.length));
+    return;
+  }
+
+  // Treat any other "Gecko" browser as Netscape 6.1.
+
+  s = "Gecko";
+  if ((i = ua.indexOf(s)) >= 0) {
+    this.isNS = true;
+    this.version = 6.1;
+    return;
+  }
+
+  s = "MSIE";
+  if ((i = ua.indexOf(s))) {
+    this.isIE = true;
+    this.version = parseFloat(ua.substr(i + s.length));
+    return;
+  }
+}
+
+var browser = new Browser();
+
+//----------------------------------------------------------------------------
+// Code for handling the menu bar and active button.
+//----------------------------------------------------------------------------
+
+var activeButton = null;
+
+function buttonClick(event, menuId) {
+
+  var button;
+
+  // Get the target button element.
+
+  if (browser.isIE)
+    button = window.event.srcElement;
+  else
+    button = event.currentTarget;
+
+  // Blur focus from the link to remove that annoying outline.
+
+  button.blur();
+
+  // Associate the named menu to this button if not already done.
+  // Additionally, initialize menu display.
+
+  if (button.menu == null) {
+    button.menu = document.getElementById(menuId);
+    if (button.menu.isInitialized == null)
+      menuInit(button.menu);
+  }
+
+  // [MODIFIED] Added for activate/deactivate on mouseover.
+
+  // Set mouseout event handler for the button, if not already done.
+
+  if (button.onmouseout == null)
+    button.onmouseout = buttonOrMenuMouseout;
+
+  // Exit if this button is the currently active one.
+
+  if (button == activeButton)
+    return false;
+
+  // [END MODIFIED]
+
+  // Reset the currently active button, if any.
+
+  if (activeButton != null)
+    resetButton(activeButton);
+
+  // Activate this button, unless it was the currently active one.
+
+  if (button != activeButton) {
+    depressButton(button);
+    activeButton = button;
+  }
+  else
+    activeButton = null;
+
+  return false;
+}
+
+function buttonMouseover(event, menuId) {
+
+  var button;
+
+  // [MODIFIED] Added for activate/deactivate on mouseover.
+
+  // Activates this button's menu if no other is currently active.
+
+  if (activeButton == null) {
+    buttonClick(event, menuId);
+    return;
+  }
+
+  // [END MODIFIED]
+
+  // Find the target button element.
+
+  if (browser.isIE)
+    button = window.event.srcElement;
+  else
+    button = event.currentTarget;
+
+  // If any other button menu is active, make this one active instead.
+
+  if (activeButton != null && activeButton != button)
+    buttonClick(event, menuId);
+}
+
+function depressButton(button) {
+
+  var x, y;
+
+  // Update the button's style class to make it look like it's
+  // depressed.
+
+  button.className += " menuButtonActive";
+
+  // [MODIFIED] Added for activate/deactivate on mouseover.
+
+  // Set mouseout event handler for the button, if not already done.
+
+  if (button.onmouseout == null)
+    button.onmouseout = buttonOrMenuMouseout;
+  if (button.menu.onmouseout == null)
+    button.menu.onmouseout = buttonOrMenuMouseout;
+
+  // [END MODIFIED]
+
+  // Position the associated drop down menu under the button and
+  // show it.
+
+  x = getPageOffsetLeft(button);
+  y = getPageOffsetTop(button) + button.offsetHeight;
+
+  // For IE, adjust position.
+
+  if (browser.isIE) {
+  //x += button.offsetParent.clientLeft-200;
+    x += button.offsetParent.clientLeft;
+    y += button.offsetParent.clientTop;
+  }
+
+  button.menu.style.left = x + "px";
+  button.menu.style.top  = y + "px";
+  button.menu.style.visibility = "visible";
+
+  // For IE; size, position and show the menu's IFRAME as well.
+
+  if (button.menu.iframeEl != null)
+  {
+    button.menu.iframeEl.style.left = button.menu.style.left;
+    button.menu.iframeEl.style.top  = button.menu.style.top;
+    button.menu.iframeEl.style.width  = button.menu.offsetWidth + "px";
+    button.menu.iframeEl.style.height = button.menu.offsetHeight + "px";
+    button.menu.iframeEl.style.display = "";
+  }
+}
+
+function resetButton(button) {
+
+  // Restore the button's style class.
+
+  removeClassName(button, "menuButtonActive");
+
+  // Hide the button's menu, first closing any sub menus.
+
+  if (button.menu != null) {
+    closeSubMenu(button.menu);
+    button.menu.style.visibility = "hidden";
+
+    // For IE, hide menu's IFRAME as well.
+
+    if (button.menu.iframeEl != null)
+      button.menu.iframeEl.style.display = "none";
+  }
+}
+
+//----------------------------------------------------------------------------
+// Code to handle the menus and sub menus.
+//----------------------------------------------------------------------------
+
+function menuMouseover(event) {
+
+  var menu;
+
+  // Find the target menu element.
+
+  if (browser.isIE)
+    menu = getContainerWith(window.event.srcElement, "DIV", "menu");
+  else
+    menu = event.currentTarget;
+
+  // Close any active sub menu.
+
+  if (menu.activeItem != null)
+    closeSubMenu(menu);
+}
+
+function menuItemMouseover(event, menuId) {
+
+  var item, menu, x, y;
+
+  // Find the target item element and its parent menu element.
+
+  if (browser.isIE)
+    item = getContainerWith(window.event.srcElement, "A", "menuItem");
+  else
+    item = event.currentTarget;
+  menu = getContainerWith(item, "DIV", "menu");
+
+  // Close any active sub menu and mark this one as active.
+
+  if (menu.activeItem != null)
+    closeSubMenu(menu);
+  menu.activeItem = item;
+
+  // Highlight the item element.
+
+  item.className += " menuItemHighlight";
+
+  // Initialize the sub menu, if not already done.
+
+  if (item.subMenu == null) {
+    item.subMenu = document.getElementById(menuId);
+    if (item.subMenu.isInitialized == null)
+      menuInit(item.subMenu);
+  }
+
+  // [MODIFIED] Added for activate/deactivate on mouseover.
+
+  // Set mouseout event handler for the sub menu, if not already done.
+
+  if (item.subMenu.onmouseout == null)
+    item.subMenu.onmouseout = buttonOrMenuMouseout;
+
+  // [END MODIFIED]
+
+  // Get position for submenu based on the menu item.
+
+  x = getPageOffsetLeft(item) + item.offsetWidth;
+  y = getPageOffsetTop(item);
+
+  // Adjust position to fit in view.
+
+  var maxX, maxY;
+
+  if (browser.isIE) {
+    maxX = Math.max(document.documentElement.scrollLeft, document.body.scrollLeft) +
+      (document.documentElement.clientWidth != 0 ? document.documentElement.clientWidth : document.body.clientWidth);
+    maxY = Math.max(document.documentElement.scrollTop, document.body.scrollTop) +
+      (document.documentElement.clientHeight != 0 ? document.documentElement.clientHeight : document.body.clientHeight);
+  }
+  if (browser.isOP) {
+    maxX = document.documentElement.scrollLeft + window.innerWidth;
+    maxY = document.documentElement.scrollTop  + window.innerHeight;
+  }
+  if (browser.isNS) {
+    maxX = window.scrollX + window.innerWidth;
+    maxY = window.scrollY + window.innerHeight;
+  }
+  maxX -= item.subMenu.offsetWidth;
+  maxY -= item.subMenu.offsetHeight;
+
+  if (x > maxX)
+    x = Math.max(0, x - item.offsetWidth - item.subMenu.offsetWidth
+      + (menu.offsetWidth - item.offsetWidth));
+  y = Math.max(0, Math.min(y, maxY));
+
+  // Position and show the sub menu.
+
+  item.subMenu.style.left       = x + "px";
+  item.subMenu.style.top        = y + "px";
+  item.subMenu.style.visibility = "visible";
+
+  // For IE; size, position and display the menu's IFRAME as well.
+
+  if (item.subMenu.iframeEl != null)
+  {
+    item.subMenu.iframeEl.style.left    = item.subMenu.style.left;
+    item.subMenu.iframeEl.style.top     = item.subMenu.style.top;
+    item.subMenu.iframeEl.style.width   = item.subMenu.offsetWidth + "px";
+    item.subMenu.iframeEl.style.height  = item.subMenu.offsetHeight + "px";
+    item.subMenu.iframeEl.style.display = "";
+  }
+
+  // Stop the event from bubbling.
+
+  if (browser.isIE)
+    window.event.cancelBubble = true;
+  else
+    event.stopPropagation();
+}
+
+function closeSubMenu(menu) {
+
+  if (menu == null || menu.activeItem == null)
+    return;
+
+  // Recursively close any sub menus.
+
+  if (menu.activeItem.subMenu != null) {
+    closeSubMenu(menu.activeItem.subMenu);
+    menu.activeItem.subMenu.style.visibility = "hidden";
+
+    // For IE, hide the sub menu's IFRAME as well.
+
+    if (menu.activeItem.subMenu.iframeEl != null)
+      menu.activeItem.subMenu.iframeEl.style.display = "none";
+
+    menu.activeItem.subMenu = null;
+  }
+
+  // Deactivate the active menu item.
+
+  removeClassName(menu.activeItem, "menuItemHighlight");
+  menu.activeItem = null;
+}
+
+// [MODIFIED] Added for activate/deactivate on mouseover. Handler for mouseout
+// event on buttons and menus.
+
+function buttonOrMenuMouseout(event) {
+
+  var el;
+
+  // If there is no active button, exit.
+
+  if (activeButton == null)
+    return;
+
+  // Find the element the mouse is moving to.
+
+  if (browser.isIE)
+    el = window.event.toElement;
+  else if (event.relatedTarget != null)
+      el = (event.relatedTarget.tagName ? event.relatedTarget : event.relatedTarget.parentNode);
+
+  // If the element is not part of a menu, reset the active button.
+
+  if (getContainerWith(el, "DIV", "menu") == null) {
+    resetButton(activeButton);
+    activeButton = null;
+  }
+}
+
+// [END MODIFIED]
+
+//----------------------------------------------------------------------------
+// Code to initialize menus.
+//----------------------------------------------------------------------------
+
+function menuInit(menu) {
+
+  var itemList, spanList;
+  var textEl, arrowEl;
+  var itemWidth;
+  var w, dw;
+  var i, j;
+
+  // For IE, replace arrow characters.
+
+  if (browser.isIE) {
+    menu.style.lineHeight = "2.5ex";
+    spanList = menu.getElementsByTagName("SPAN");
+    for (i = 0; i < spanList.length; i++)
+      if (hasClassName(spanList[i], "menuItemArrow")) {
+        spanList[i].style.fontFamily = "Webdings";
+        spanList[i].firstChild.nodeValue = "4";
+      }
+  }
+
+  // Find the width of a menu item.
+
+  itemList = menu.getElementsByTagName("A");
+  if (itemList.length > 0)
+    itemWidth = itemList[0].offsetWidth;
+  else
+    return;
+
+  // For items with arrows, add padding to item text to make the
+  // arrows flush right.
+
+  for (i = 0; i < itemList.length; i++) {
+    spanList = itemList[i].getElementsByTagName("SPAN");
+    textEl  = null;
+    arrowEl = null;
+    for (j = 0; j < spanList.length; j++) {
+      if (hasClassName(spanList[j], "menuItemText"))
+        textEl = spanList[j];
+      if (hasClassName(spanList[j], "menuItemArrow"))
+        arrowEl = spanList[j];
+    }
+    if (textEl != null && arrowEl != null) {
+      textEl.style.paddingRight = (itemWidth 
+        - (textEl.offsetWidth + arrowEl.offsetWidth)) + "px";
+      // For Opera, remove the negative right margin to fix a display bug.
+      if (browser.isOP)
+        arrowEl.style.marginRight = "0px";
+    }
+  }
+
+  // Fix IE hover problem by setting an explicit width on first item of
+  // the menu.
+
+  if (browser.isIE) {
+    w = itemList[0].offsetWidth;
+    itemList[0].style.width = w + "px";
+    dw = itemList[0].offsetWidth - w;
+    w -= dw;
+    itemList[0].style.width = w + "px";
+  }
+
+  // Fix the IE display problem (SELECT elements and other windowed controls
+  // overlaying the menu) by adding an IFRAME under the menu.
+
+  if (browser.isIE) {
+    var iframeEl = document.createElement("IFRAME");
+    iframeEl.frameBorder = 0;
+    iframeEl.src = "javascript:;";
+    iframeEl.style.display = "none";
+    iframeEl.style.position = "absolute";
+    iframeEl.style.filter = "progid:DXImageTransform.Microsoft.Alpha(style=0,opacity=0)";
+    menu.iframeEl = menu.parentNode.insertBefore(iframeEl, menu);
+  }
+
+  // Mark menu as initialized.
+
+  menu.isInitialized = true;
+}
+
+//----------------------------------------------------------------------------
+// General utility functions.
+//----------------------------------------------------------------------------
+
+function getContainerWith(node, tagName, className) {
+
+  // Starting with the given node, find the nearest containing element
+  // with the specified tag name and style class.
+
+  while (node != null) {
+    if (node.tagName != null && node.tagName == tagName &&
+        hasClassName(node, className))
+      return node;
+    node = node.parentNode;
+  }
+
+  return node;
+}
+
+function hasClassName(el, name) {
+
+  var i, list;
+
+  // Return true if the given element currently has the given class
+  // name.
+
+  list = el.className.split(" ");
+  for (i = 0; i < list.length; i++)
+    if (list[i] == name)
+      return true;
+
+  return false;
+}
+
+function removeClassName(el, name) {
+
+  var i, curList, newList;
+
+  if (el.className == null)
+    return;
+
+  // Remove the given class name from the element's className property.
+
+  newList = new Array();
+  curList = el.className.split(" ");
+  for (i = 0; i < curList.length; i++)
+    if (curList[i] != name)
+      newList.push(curList[i]);
+  el.className = newList.join(" ");
+}
+
+function getPageOffsetLeft(el) {
+
+  var x;
+
+  // Return the x coordinate of an element relative to the page.
+
+  //x = el.offsetLeft-60;
+  x = el.offsetLeft;
+  if (el.offsetParent != null)
+    x += getPageOffsetLeft(el.offsetParent);
+
+  return x;
+}
+
+function getPageOffsetTop(el) {
+
+  var y;
+
+  // Return the x coordinate of an element relative to the page.
+
+  y = el.offsetTop;
+  if (el.offsetParent != null)
+    y += getPageOffsetTop(el.offsetParent);
+
+  return y;
+}
+
+</script>
+
+  <script language="JavaScript">
+<!-- Begin
+function getCookie(name){
+var cname = name + "=";
+var dc = document.cookie;
+if (dc.length > 0) {
+begin = dc.indexOf(cname);
+if (begin != -1) {
+begin += cname.length;
+end = dc.indexOf(";", begin);
+if (end == -1) end = dc.length;
+return unescape(dc.substring(begin, end));
+}
+}
+var blank = "";
+return blank;
+}
+function setCookie(name, value, expires) {
+document.cookie = name + "=" + escape(value) +
+((expires != null) ? "; expires=" + expires.toGMTString() : "")
++ "; path=/";
+}
+function setName() {
+var expdate = new Date ();
+expdate.setTime (expdate.getTime() + (24 * 60 * 60 * 1000 * 365));
+var prompt=i = document.Mail.name.value;
+setCookie("name", i, expdate);
+}
+function getName() {
+if(getCookie("name") != null) {
+document.Mail.Name.value = getCookie("emailname");
+}
+}
+function getInfo() {
+var now= new Date();
+document.Mail.Info.value += "Comment Date:" + now;
+}
+function checkMultiple() {
+if (getCookie("emailsent") == 'true') return true;
+else return false;
+}
+function process() {
+setCookie("emailsent", "true");
+with (document.Mail) {
+if (Subject.selectedIndex == 1) action = "mailto:corinailiescu@bell.net?subject=www - About Axion Solutions";
+else if (Subject.selectedIndex == 2) action = "mailto:corinailiescu@bell.net?subject=www - Architecture Methodologies";
+else if (Subject.selectedIndex == 3) action = "mailto:corinailiescu@bell.net?subject=www - Business Analysis";
+else if (Subject.selectedIndex == 4) action = "mailto:corinailiescu@bell.net?subject=www - Software Development and Testing";
+else if (Subject.selectedIndex == 5) action = "mailto:corinailiescu@bell.net?subject=www - Networking and Security Support";
+else action = "mailto:corinailiescu@bell.net?subject=www - Other Comments or Questions";
+}
+}
+function formCheck() {
+var passed = false;
+with (document.Mail) {
+if (Subject.selectedIndex == 0) {
+alert("Please pick a subject.");
+Subject.focus();
+}
+else if (Name.value == "") {
+alert("Please inlcude your name.");
+Name.focus();
+}
+else if (checkMultiple()) {
+if (confirm("You just sent an e-mail from this form, are you sure you want to send another?")) {
+process();
+passed = true;
+}
+}
+else {
+process();
+passed = true;
+}
+}
+return passed;
+}
+// End -->
+  </script><!-- end form -->
+<p><!-- Menu bar. --></p>
+<title> Contact Us</title>
+<center>
+<table  style="width: 1100px;" align="center">
+   <br><br><br>
+	<tr>
+	  	  
+	   <td align=right colspan=8 >
+		    <div class="menuBar" style="WIDTH: 57.07%; HEIGHT: 28px" id=DIV1>
+				<a class="menuButton" href="home.html" onclick="return resetButton(event);" 
+                   		  	onmouseover="resetButton(event);">Home</a>
+                   
+				<a class="menuButton" href ="" onclick="return buttonClick(event, 'editMenu');" 
+				   	onmouseover="buttonMouseover(event, 'editMenu');" >Company Profile </a>
+				   
+				<a class="menuButton" href="" onclick="return buttonClick(event, 'viewMenu');" 
+				   	onmouseover="buttonMouseover(event, 'viewMenu');">Products &amp;Services</a>
+				   
+				<a class="menuButton" href="Cont.html" onclick="return resetButton(event);" 
+                   			onmouseover="resetButton(event);">Contact Us</a>
+                   
+         	    </div>
+		<!-- Main menus. -->
+			<div id="editMenu" class="menu" onmouseover="menuMouseover(event)">
+				<A class=menuItem href="overview.html" style="BORDER-BOTTOM-COLOR: black" >Company Overview</A>
+				<A class=menuItem href="key.html" style="BORDER-BOTTOM-COLOR: black" >Key Markets</A>
+				<A class=menuItem href="work.html" style="BORDER-BOTTOM-COLOR: black">Working @ CC</A>  
+			</div>
+			<div id="viewMenu" class="menu" onmouseover="menuMouseover(event)">
+				<A class=menuItem href="service.html" style="BORDER-BOTTOM-COLOR: black">Service Offering</A>
+				<A class=menuItem href="product.html" style="BORDER-BOTTOM-COLOR: black">Products</A>
+				<A class=menuItem href="knowledge.html" style="BORDER-BOTTOM-COLOR: black">Knowledge Base</A>
+			</div>
+	   </td>
+	   <td valign=top align=right >
+		
+	   </td>
+	</tr>
+	<tr>
+	   <td colspan=9>&nbsp;</td>
+	</tr> 
+</table>
+	
+  
+
+<table>
+<tr>
+  <td align=left colspan=9>
+     <b><i>
+       Cont<font color=#000000>act Us:</font></i></b></font>
+  </td>
+          
+</tr>
+
+<tr>
+   <td  colspan="9" align="center" >
+                <div style="text-align: justify; margin-left: 1px; margin-right: 1px;">
+                  <span style="color: #ffd700; font-weight: bold;"><br>
+                  For faster assistance by directing your question or comment to the person that can efficiently
+                  assist you please use the form below. <br>
+                  <br style="color: rgb(153, 51, 153); font-weight: bold;">
+                  </span>
+                  
+                </div>
+    </td>
+            
+ </tr>
+ <tr >
+         <td colspan="9">
+          <center><font face="Times" size="3"><big style="font-style: italic; color: #ffd700;"><big>
+          <span style="font-weight: bold;">Customer Service Request</span></big></big><br>
+          <br></font><font style="font-weight: bold;" face="Times" size="3">
+          Please let us know how can we be of your assistance? Any questions, comments or suggestions?
+          </font><br><font face="Times" size="3"><br></font><form name="Mail" action="mailto:corinailiescu@bell.net?subject=www - Form" method="post" enctype="text/plain" onsubmit="return formCheck();">
+          <font face="Times" size="3"><input size="0" name="Info" type="hidden">
+          </td>
+	</tr>
+	<table border="0" cellpadding="5" cellspacing="0">
+          <tbody>
+            <tr>
+              <td colspan="6" style="height: 30px;"><font face="Times" size="3" style="font-weight: bold;"> Name:<br></font></td>
+              <td style="height: 30px;"> <input size="30" name="Name" onchange="setName()"><br></td>
+              <td><font face="Times" size="3"><font face="Times" size="3"style="font-weight: bold;">Email:</font></font></td>
+              <td style="height: 30px; text-align: left;" valign="top"><font face="Times" size="3"><font face="Times" size="3"><input size="32" name="Email"></font></font>&nbsp;</td>
+            </tr>
+            <tr>
+              <td colspan="6"><font face="Times" size="3" style="font-weight: bold;">Company:</font></td>
+              <td><font face="Times" size="3"><input size="30" name="Company"></font></td>
+              <td><font face="Times" size="3" style="font-weight: bold;"> Subject:</font></td>
+              <td><font face="Times" size="3" style="font-weight: bold;"><select name="Subject">
+                       <option select="">Please select a subject</option>
+                       <option>1. About Axion Solutions</option>
+                       <option>2. Architecture Methodologies</option>
+                       <option>3. Business Analysis</option>
+                       <option>4. Software Development and Testing</option>
+                       <option>5. Networking and Security Support</option>
+                       <option>6. Other Comments or Questions</option></select></font>
+                       
+                       
+               </td>
+            </tr>
+            
+	   <tr>
+                <td colspan="9"><font face="Times" size="3" style="font-weight: bold;">
+                  Please type your question or comment in the space below:</font>
+                 <br>
+                 <textarea name="Questions, Comments, Suggestions" cols="75" rows="6">	</textarea>
+                </td>
+            </tr>
+           </tbody>
+
+<tbody>
+             <tr>
+                <td colspan="9" align="center">
+                   <input value="Send Inquiry" type="submit"></td>
+             </tr>
+           </tbody>
+<tr>
+                <td colspan="9" align="center">
+			<br style="color: rgb(153, 51, 153); font-weight: bold;">
+                  	<span style="color: #ffd700; font-weight: bold;">
+                  	You can also use the following contact options for your convenience:<br>
+                   	<br>
+                  	</span> 
+		</td>
+</tr> 
+  <tr>
+	          
+	<td style="width: 80px;"><img style="width: 67px; height: 50px;" alt="" src="images/email.gif">
+            </td>
+            <td colspan="8" style="color: #ffd700; width: 150px;" margin-left: 10px; margin-right: 10px; ><a href="mailto:corinailiescu@bell.net">
+              <span style="color: #ffd700; font-style: italic;">
+                info@bell.net</span><br></a>
+            </td>
+  </tr>
+  <tr>
+            <td style="width: 80px;"><img style="width: 67px; height: 50px;" alt="" src="images/mail.gif">
+            </td>
+            <td colspan="8" style="color: #ffd700; width: 150px;">
+             Attn.: Public Relations,<br>
+             53 Cougar Court, Richmond Hill, ON, L4S 1H7 </td>
+         </tr>
+         <tr>
+            <td style="width: 80px;"><img style="width: 67px; height: 50px;" alt="" src="images/phone.gif">
+            </td>
+           <td colspan="8" style="color: #ffd700; width: 150px;">
+            (416) 884 - 8633
+           </td>
+	   
+         </tr>
+      </tbody>
+</table>
+
+ 
+      
+
+<script language="JavaScript">
+<!-- Begin
+getInfo();
+getName();
+// End -->
+</script>
+
+<table>
+
+</body></html>
+          <tr> 
+             <td>&nbsp;</td>
+             <td nowrap colspan=7>&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2024 Axion Solutions 
+      		&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;&nbsp; All rights reserved! &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; For inquires contact:  
+		<A title="General inquires" href="mailto:corinailiescu13@gmail.com"><U>corinailiescu13@gmail.com</U></A>
+	     </td>
+             <td >&nbsp;</td> 
+           </tr>
+ </table>
+    
+
+<P></P>
+
+
+</center>
+</body>
+</html>
